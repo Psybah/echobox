@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 
 const MessageFormSchema = z.object({
   text: z.string().max(1000, 'Message cannot exceed 1000 characters').optional(),
+  imageCaption: z.string().max(200, 'Caption cannot exceed 200 characters').optional(),
+  documentDescription: z.string().max(200, 'Description cannot exceed 200 characters').optional(),
 });
 
 type MessageFormValues = z.infer<typeof MessageFormSchema> & {
@@ -54,14 +56,22 @@ const MessageForm: React.FC = () => {
     resolver: zodResolver(MessageFormSchema),
     defaultValues: {
       text: '',
+      imageCaption: '',
+      documentDescription: '',
     },
   });
 
   const textValue = watch('text');
+  const imageCaptionValue = watch('imageCaption');
+  const documentDescriptionValue = watch('documentDescription');
 
   useEffect(() => {
     if (formReset) {
-      reset({ text: '' });
+      reset({ 
+        text: '',
+        imageCaption: '',
+        documentDescription: '',
+      });
       setSelectedFile(null);
       setAudioBlob(null);
       setFormReset(false);
@@ -94,7 +104,6 @@ const MessageForm: React.FC = () => {
   const onSubmit: SubmitHandler<MessageFormValues> = async (data) => {
     setIsSubmitting(true);
     
-    // Create form data for submission
     const formData = new FormData();
     
     if (activeTab === 'text' && data.text) {
@@ -103,12 +112,18 @@ const MessageForm: React.FC = () => {
     } else if (activeTab === 'image' && selectedFile) {
       formData.append('file', selectedFile);
       formData.append('type', 'image');
+      if (data.imageCaption) {
+        formData.append('caption', data.imageCaption);
+      }
     } else if (activeTab === 'voice' && audioBlob) {
       formData.append('audio', audioBlob);
       formData.append('type', 'voice');
     } else if (activeTab === 'document' && selectedFile) {
       formData.append('file', selectedFile);
       formData.append('type', 'document');
+      if (data.documentDescription) {
+        formData.append('description', data.documentDescription);
+      }
     } else {
       toast({
         title: "No content to send",
@@ -231,7 +246,7 @@ const MessageForm: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="image" className="mt-0">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <FileUploadArea
                   onFileSelect={onFileSelect}
                   acceptedFileTypes="image"
@@ -239,6 +254,32 @@ const MessageForm: React.FC = () => {
                   selectedFile={selectedFile}
                   onClearFile={() => setSelectedFile(null)}
                 />
+                {selectedFile && (
+                  <div className="space-y-2">
+                    <div className="input-gradient-border">
+                      <Textarea
+                        placeholder="Add a caption to your image..."
+                        className={cn(
+                          "min-h-20 resize-none bg-transparent no-focus-ring",
+                          errors.imageCaption && "border-destructive"
+                        )}
+                        {...register("imageCaption")}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <span className={cn(
+                        "text-xs",
+                        imageCaptionValue?.length > 150 ? "text-amber-400" : "text-muted-foreground",
+                        imageCaptionValue?.length > 200 && "text-destructive"
+                      )}>
+                        {imageCaptionValue?.length || 0}/200
+                      </span>
+                    </div>
+                    {errors.imageCaption && (
+                      <p className="text-destructive text-sm">{errors.imageCaption.message}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
             
@@ -249,7 +290,7 @@ const MessageForm: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="document" className="mt-0">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <FileUploadArea
                   onFileSelect={onFileSelect}
                   acceptedFileTypes="document"
@@ -257,6 +298,32 @@ const MessageForm: React.FC = () => {
                   selectedFile={selectedFile}
                   onClearFile={() => setSelectedFile(null)}
                 />
+                {selectedFile && (
+                  <div className="space-y-2">
+                    <div className="input-gradient-border">
+                      <Textarea
+                        placeholder="Add a description to your document..."
+                        className={cn(
+                          "min-h-20 resize-none bg-transparent no-focus-ring",
+                          errors.documentDescription && "border-destructive"
+                        )}
+                        {...register("documentDescription")}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <span className={cn(
+                        "text-xs",
+                        documentDescriptionValue?.length > 150 ? "text-amber-400" : "text-muted-foreground",
+                        documentDescriptionValue?.length > 200 && "text-destructive"
+                      )}>
+                        {documentDescriptionValue?.length || 0}/200
+                      </span>
+                    </div>
+                    {errors.documentDescription && (
+                      <p className="text-destructive text-sm">{errors.documentDescription.message}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
           </motion.div>
