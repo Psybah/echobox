@@ -89,7 +89,7 @@ npm run dev
 yarn dev
 ```
 
-4. The application will be available at `http://localhost:5173`
+4. The application will be available at `http://localhost:8080`
 
 ## Admin Access
 

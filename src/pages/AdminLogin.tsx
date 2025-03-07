@@ -20,20 +20,6 @@ const AdminLogin: React.FC = () => {
         <div className="w-full flex-1 flex items-center justify-center">
           <AdminLoginForm />
         </div>
-        
-        <footer className="w-full text-center py-4 text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-1.5">
-            Made with <Heart className="h-4 w-4 text-red-500 fill-red-500" /> by 
-            <a 
-              href="https://github.com/Psybah/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-echo-purple hover:text-echo-blue transition-colors underline-offset-2 hover:underline"
-            >
-              Cybersmith
-            </a>
-          </div>
-        </footer>
       </div>
     </PageTransition>
   );

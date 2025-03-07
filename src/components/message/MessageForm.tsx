@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
@@ -24,6 +23,18 @@ type MessageFormValues = z.infer<typeof MessageFormSchema> & {
 
 type MessageType = 'text' | 'image' | 'voice' | 'document';
 
+const PLACEHOLDER_MESSAGES = [
+  "Sholape dey do hookup",
+  "Akeem dey beg for money",
+  "BabyTV dey gba",
+  "Tofunmi don suck my prick",
+  "Uncle Kay shey na you get clt?",
+  "God go punish FHG",
+  "Oloshi full this department",
+  "100l guys how far na",
+  "Why 400l people dey do like god"
+];
+
 const MessageForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MessageType>('text');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +42,7 @@ const MessageForm: React.FC = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [formReset, setFormReset] = useState(false);
   const { toast } = useToast();
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(PLACEHOLDER_MESSAGES[0]);
 
   const {
     register,
@@ -55,6 +67,16 @@ const MessageForm: React.FC = () => {
       setFormReset(false);
     }
   }, [formReset, reset]);
+
+  useEffect(() => {
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % PLACEHOLDER_MESSAGES.length;
+      setCurrentPlaceholder(PLACEHOLDER_MESSAGES[currentIndex]);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const onFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -185,7 +207,7 @@ const MessageForm: React.FC = () => {
               <div className="space-y-4">
                 <div className="input-gradient-border">
                   <Textarea
-                    placeholder="Type your anonymous message here..."
+                    placeholder={currentPlaceholder}
                     className={cn(
                       "min-h-32 resize-none bg-transparent no-focus-ring",
                       errors.text && "border-destructive"
