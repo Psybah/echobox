@@ -1,24 +1,32 @@
-
-import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useAdmin } from '@/hooks/use-admin';
-import PageTransition from '@/components/layout/PageTransition';
-import MessageDashboard from '@/components/admin/MessageDashboard';
+import React, { useEffect } from "react";
+import MessageDashboard from "@/components/admin/MessageDashboard";
+import PageTransition from "@/components/layout/PageTransition";
+import { useAdmin } from "@/hooks/use-admin";
+import { useNavigate } from "react-router-dom";
 
 const AdminMessages: React.FC = () => {
-  const { isLoggedIn } = useAdmin();
+  const { isAdmin, checkingStatus } = useAdmin();
+  const navigate = useNavigate();
 
-  // Redirect to login if not logged in
-  if (!isLoggedIn) {
-    return <Navigate to="/admin" replace />;
-  }
+  useEffect(() => {
+    // Redirect to login if not admin and finished checking
+    if (!isAdmin && !checkingStatus) {
+      navigate("/admin-login");
+    }
+  }, [isAdmin, checkingStatus, navigate]);
 
+  // Show loading or the dashboard based on auth status
   return (
     <PageTransition>
-      <div className="container mx-auto py-6">
-        <MessageDashboard />
-      </div>
+      {
+        checkingStatus ? (
+          <div className="flex justify-center items-center mx-auto px-4 py-12 min-h-[50vh] container">
+            <div className="border-4 border-primary border-t-transparent rounded-full w-10 h-10 animate-spin" />
+          </div>
+        ) : isAdmin ? (
+          <MessageDashboard />
+        ) : null /* Will redirect, no need to render anything */
+      }
     </PageTransition>
   );
 };

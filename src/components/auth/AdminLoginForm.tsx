@@ -1,172 +1,139 @@
+import React, { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Lock, User, Key } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useAdmin } from "@/hooks/use-admin";
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
-import { Lock, UserCircle, EyeOff, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+// These would typically be environment variables or from a secure store
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "password123";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { useAdmin } from '@/hooks/use-admin';
-import { cn } from '@/lib/utils';
-
-const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+const LoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<typeof LoginSchema>;
 
 const AdminLoginForm: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAdmin();
+  const { toast } = useToast();
+  const { loginAdmin } = useAdmin();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-    },
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(LoginSchema),
   });
 
-  const onSubmit = async (data: LoginValues) => {
-    setIsLoggingIn(true);
-    
-    try {
-      // Simulated login with hardcoded credentials (as per requirements)
-      if (data.username === 'Admin' && data.password === 'IamAdmin$') {
-        // Short delay to simulate API call
-        await new Promise(r => setTimeout(r, 800));
-        
-        // Set admin session
-        login();
-        
-        toast({
-          title: 'Login successful',
-          description: 'Welcome to the admin dashboard',
-        });
-        
-        navigate('/admin/messages');
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
+  const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
+    setIsSubmitting(true);
+
+    // Simulate API call delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    if (data.username === ADMIN_USERNAME && data.password === ADMIN_PASSWORD) {
+      // Create a fake token - in a real app this would come from your backend
+      const fakeToken = btoa(data.username + ":" + Date.now());
+      loginAdmin(fakeToken);
+
       toast({
-        title: 'Login failed',
-        description: 'Invalid username or password',
-        variant: 'destructive',
+        title: "Login successful",
+        description: "Welcome back, admin!",
       });
-    } finally {
-      setIsLoggingIn(false);
+
+      navigate("/admin-messages");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: "Invalid username or password",
+      });
     }
-  };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleBack = () => {
-    navigate('/');
+    setIsSubmitting(false);
   };
 
   return (
-    <motion.div 
-      className="glass-card w-full max-w-md mx-auto p-8 space-y-6"
+    <motion.form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 p-6 w-full max-w-md glass-card"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold text-gradient">Admin Login</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-3">
+        <div className="flex justify-center mb-6">
+          <div className="bg-primary/10 p-4 rounded-full">
+            <Lock className="w-10 h-10 text-primary" />
+          </div>
+        </div>
+
+        <h2 className="font-bold text-gradient text-2xl text-center">
+          Admin Login
+        </h2>
+        <p className="text-muted-foreground text-sm text-center">
           Enter your credentials to access the admin dashboard
         </p>
       </div>
-      
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <div className="input-gradient-border">
-            <div className="relative">
-              <UserCircle className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Username"
-                {...register('username')}
-                className="pl-10 bg-transparent border-0 no-focus-ring"
-              />
-            </div>
+
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <div className="relative">
+            <User className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Username"
+              {...register("username")}
+              className="pl-10"
+            />
           </div>
           {errors.username && (
-            <p className="text-destructive text-xs">{errors.username.message}</p>
+            <p className="text-destructive text-xs">
+              {errors.username.message}
+            </p>
           )}
         </div>
-        
-        <div className="space-y-2">
-          <div className="input-gradient-border">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
-                {...register('password')}
-                className="pl-10 pr-10 bg-transparent border-0 no-focus-ring"
-              />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
+
+        <div className="space-y-1">
+          <div className="relative">
+            <Key className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
+            <Input
+              type="password"
+              placeholder="Password"
+              {...register("password")}
+              className="pl-10"
+            />
           </div>
           {errors.password && (
-            <p className="text-destructive text-xs">{errors.password.message}</p>
+            <p className="text-destructive text-xs">
+              {errors.password.message}
+            </p>
           )}
         </div>
-        
-        <Button
-          type="submit"
-          className="w-full relative overflow-hidden group"
-          disabled={isLoggingIn}
-        >
-          <span className={cn(
-            "inline-flex items-center gap-2 transition-transform duration-200",
-            isLoggingIn && "translate-y-10"
-          )}>
-            <Lock className="h-4 w-4" />
-            Login
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="relative w-full overflow-hidden"
+      >
+        <span className={isSubmitting ? "invisible" : "visible"}>Login</span>
+        {isSubmitting && (
+          <span className="absolute inset-0 flex justify-center items-center">
+            <div className="border-2 border-white border-t-transparent rounded-full w-5 h-5 animate-spin" />
           </span>
-          {isLoggingIn && (
-            <span className="absolute inset-0 flex items-center justify-center">
-              <div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin" />
-            </span>
-          )}
-          <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-white transition-opacity duration-200" />
-        </Button>
-        
-        <div className="flex justify-center">
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleBack}
-            className="text-muted-foreground hover:text-foreground mt-2"
-          >
-            Back to Home
-          </Button>
-        </div>
-      </form>
-    </motion.div>
+        )}
+      </Button>
+    </motion.form>
   );
 };
 

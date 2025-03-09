@@ -1,10 +1,10 @@
-
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/hooks/use-theme";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AdminProvider } from "@/hooks/use-admin";
 import { AnimatePresence } from "framer-motion";
 
@@ -14,32 +14,33 @@ import SubmitPage from "@/pages/SubmitPage";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminMessages from "@/pages/AdminMessages";
 import NotFound from "@/pages/NotFound";
+import "./App.css";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AdminProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
+          <Router>
+            <div className="flex flex-col min-h-screen">
               <Header />
               <main className="flex-1">
                 <AnimatePresence mode="wait">
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/submit" element={<SubmitPage />} />
-                    <Route path="/admin" element={<AdminLogin />} />
-                    <Route path="/admin/messages" element={<AdminMessages />} />
+                    <Route path="/admin-login" element={<AdminLogin />} />
+                    <Route path="/admin-messages" element={<AdminMessages />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AnimatePresence>
               </main>
             </div>
-          </BrowserRouter>
+            <Toaster />
+            <Sonner />
+          </Router>
         </TooltipProvider>
       </AdminProvider>
     </ThemeProvider>
