@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Filter,
   LayoutGrid,
   List as ListIcon,
-  Calendar,
-  SlidersHorizontal,
+  RefreshCw,
   MessageSquare,
   Image,
   FileText,
@@ -28,7 +27,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import MessageCard, { Message, MessageType } from "./MessageCard";
 import { cn } from "@/lib/utils";
@@ -43,6 +41,7 @@ const MessageDashboard: React.FC = () => {
   const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<
     MessageType | "all"
@@ -54,12 +53,23 @@ const MessageDashboard: React.FC = () => {
   const ITEMS_PER_PAGE = 10;
 
   // Load real data from API
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(
+    async (showToast = false) => {
       try {
-        setIsLoading(true);
+        if (showToast) {
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
+        }
+
         const data = await fetchMessages();
         setMessages(data);
+
+        if (showToast) {
+          toast({
+            description: `${data.length} messages loaded successfully`,
+          });
+        }
       } catch (error) {
         toast({
           variant: "destructive",
@@ -69,11 +79,22 @@ const MessageDashboard: React.FC = () => {
         console.error("Failed to fetch messages:", error);
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
-    };
+    },
+    [toast]
+  );
 
+  useEffect(() => {
     loadData();
-  }, []);
+
+    // Set up polling for new messages every 30 seconds
+    const intervalId = setInterval(() => {
+      loadData(false);
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [loadData]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -93,7 +114,9 @@ const MessageDashboard: React.FC = () => {
     if (searchQuery) {
       filtered = filtered.filter(
         (msg) =>
-          msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          // Handle null content gracefully
+          (msg.content &&
+            msg.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (msg.fileName &&
             msg.fileName.toLowerCase().includes(searchQuery.toLowerCase()))
       );
@@ -118,6 +141,14 @@ const MessageDashboard: React.FC = () => {
     }
 
     setFilteredMessages(filtered);
+
+    // Reset to first page when filters change
+    if (
+      filtered.length > 0 &&
+      page > Math.ceil(filtered.length / ITEMS_PER_PAGE)
+    ) {
+      setPage(1);
+    }
   }, [messages, selectedTypeFilter, showUnreadOnly, searchQuery, sortOption]);
 
   // Get paginated results
@@ -126,7 +157,10 @@ const MessageDashboard: React.FC = () => {
     page * ITEMS_PER_PAGE
   );
 
-  const totalPages = Math.ceil(filteredMessages.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredMessages.length / ITEMS_PER_PAGE)
+  );
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -154,6 +188,10 @@ const MessageDashboard: React.FC = () => {
   const handleTypeSelect = (type: MessageType | "all") => {
     setSelectedTypeFilter(type);
     setPage(1);
+  };
+
+  const handleRefresh = () => {
+    loadData(true);
   };
 
   const getTypeIcon = (type: MessageType | "all") => {
@@ -197,7 +235,26 @@ const MessageDashboard: React.FC = () => {
   return (
     <div className="space-y-6 mx-auto p-4 w-full max-w-6xl">
       <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center gap-4">
-        <h1 className="font-bold text-gradient text-2xl">Message Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-bold text-gradient text-2xl">
+            Message Dashboard
+          </h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-0 w-8 h-8"
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw
+              className={cn(
+                "w-4 h-4",
+                (isRefreshing || isLoading) && "animate-spin"
+              )}
+            />
+            <span className="sr-only">Refresh</span>
+          </Button>
+        </div>
 
         <div className="flex items-center self-end gap-2">
           <Button

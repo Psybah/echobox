@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   MessageSquare,
@@ -10,6 +10,7 @@ import {
   Trash,
   Download,
   Share,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
@@ -49,10 +50,22 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onDelete,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
   const { toast } = useToast();
 
-  const handleMarkAsRead = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // When drawer is opened and message is unread, mark it as read
+  useEffect(() => {
+    if (isDrawerOpen && !message.isRead) {
+      handleMarkAsRead();
+    }
+  }, [isDrawerOpen, message.isRead]);
+
+  const handleMarkAsRead = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    if (message.isRead) return;
+
     try {
       await markMessageAsRead(message.id);
       onMarkRead(message.id);
@@ -69,24 +82,72 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const handleExportToWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Prepare the content for WhatsApp
+    let messageContent = "";
+
+    if (message.type === "text") {
+      messageContent = message.content;
+    } else {
+      messageContent = message.content
+        ? `${message.content} (${message.type} attachment)`
+        : `${message.type} attachment`;
+    }
+
+    // Open WhatsApp with the message content
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+      messageContent
+    )}`;
+    window.open(whatsappUrl, "_blank");
+
     toast({
-      description: "Exported to WhatsApp",
+      description: "Opened in WhatsApp",
     });
   };
 
   const handleScreenshot = (e: React.MouseEvent) => {
     e.stopPropagation();
     toast({
-      description: "Screenshot captured",
+      description: "Screenshot feature coming soon",
     });
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setIsDrawerOpen(false);
     onDelete(message.id);
     toast({
-      description: "Message deleted",
+      description: "Message removed from view",
     });
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!message.fileUrl || !message.fileName) return;
+
+    try {
+      setMediaLoading(true);
+      // Here we're using the standard browser download approach
+      const link = document.createElement("a");
+      link.href = message.fileUrl;
+      link.download = message.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        description: "Download started",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "Failed to download file",
+      });
+    } finally {
+      setMediaLoading(false);
+    }
   };
 
   const getTypeIcon = () => {
@@ -110,7 +171,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
         ? `${message.content.substring(0, 100)}...`
         : message.content;
     }
-    return message.fileName || "File attachment";
+
+    if (message.content) {
+      return message.content;
+    }
+
+    return message.fileName || `${message.type} attachment`;
   };
 
   const getCardClassName = () => {
@@ -170,10 +236,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <Share className="mr-2 w-4 h-4" />
                   <span>Export to WhatsApp</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleScreenshot}>
-                  <Download className="mr-2 w-4 h-4" />
-                  <span>Capture screenshot</span>
-                </DropdownMenuItem>
+                {message.type !== "text" && (
+                  <DropdownMenuItem onClick={handleDownload}>
+                    <Download className="mr-2 w-4 h-4" />
+                    <span>Download</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleDelete}
                   className="text-destructive focus:text-destructive"
@@ -203,16 +271,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
               </div>
 
               <div className="flex gap-2">
-                {!message.isRead && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleMarkAsRead}
-                  >
-                    <Check className="mr-2 w-4 h-4" />
-                    Mark as read
-                  </Button>
-                )}
                 <Button size="sm" variant="destructive" onClick={handleDelete}>
                   <Trash className="mr-2 w-4 h-4" />
                   Delete
@@ -224,39 +282,81 @@ const MessageCard: React.FC<MessageCardProps> = ({
               {message.type === "text" ? (
                 <p className="whitespace-pre-wrap">{message.content}</p>
               ) : message.type === "image" ? (
-                <img
-                  src={message.fileUrl}
-                  alt="Message attachment"
-                  className="rounded-md max-w-full"
-                />
+                <div className="space-y-4">
+                  {message.content && (
+                    <p className="text-center italic">{message.content}</p>
+                  )}
+                  <div className="flex justify-center">
+                    <img
+                      src={message.fileUrl}
+                      alt={message.content || "Image attachment"}
+                      className="rounded-md max-w-full max-h-[60vh] object-contain"
+                      onError={() => setMediaError(true)}
+                    />
+                  </div>
+                  {mediaError && (
+                    <div className="text-destructive text-center">
+                      Failed to load image.{" "}
+                      <a
+                        href={message.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline"
+                      >
+                        Open directly
+                      </a>
+                    </div>
+                  )}
+                </div>
               ) : message.type === "voice" ? (
-                <div className="audio-player">
-                  <audio controls className="w-full">
-                    <source src={message.fileUrl} type="audio/mp3" />
-                    Your browser does not support the audio element.
-                  </audio>
+                <div className="space-y-4">
+                  <div className="p-4 border border-border rounded-md audio-player">
+                    <audio controls className="w-full">
+                      <source src={message.fileUrl} type="audio/mp3" />
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                  <div className="flex justify-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDownload}
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Audio
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col justify-center items-center py-10">
                   <FileText className="mb-4 w-16 h-16 text-muted-foreground" />
-                  <p className="font-medium text-sm">{message.fileName}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {(message.fileSize &&
-                      (message.fileSize / 1024 / 1024).toFixed(2)) ||
-                      "?"}{" "}
-                    MB
+                  {message.content && (
+                    <p className="mb-4 text-center">{message.content}</p>
+                  )}
+                  <p className="font-medium text-sm">
+                    {message.fileName || "Document attachment"}
                   </p>
-                  <Button className="mt-4" size="sm" asChild>
-                    <a
-                      href={message.fileUrl}
-                      download={message.fileName}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  <div className="flex gap-2 mt-6">
+                    <Button size="sm" asChild>
+                      <a
+                        href={message.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="mr-2 w-4 h-4" />
+                        Open
+                      </a>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
                     >
                       <Download className="mr-2 w-4 h-4" />
                       Download
-                    </a>
-                  </Button>
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

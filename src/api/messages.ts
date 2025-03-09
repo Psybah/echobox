@@ -18,21 +18,46 @@ export async function fetchMessages(): Promise<Message[]> {
     // Transform the API response to match our Message interface
     return data.map((msg: any) => ({
       id: msg.id.toString(),
-      type: mapMessageType(msg.type),
+      type: mapMessageType(msg.messageType), // Using messageType from the API
       content: msg.text || "",
-      createdAt: new Date(msg.created_at),
-      isRead: msg.is_read === 1,
-      ...(msg.type !== "text" && {
-        fileName:
-          msg.file_name || `${msg.type}_file.${getFileExtension(msg.type)}`,
-        fileSize: msg.file_size || 0,
-        fileUrl: msg.id ? `${BASE_URL}/get-media/${msg.id}` : "",
+      createdAt: new Date(msg.timestamp), // Using timestamp from the API
+      isRead: msg.messageStatus !== "unread", // Using messageStatus from the API
+      ...(msg.messageType !== "text" && {
+        fileName: getFileName(msg.messageType, msg.id, msg.text),
+        fileSize: 0, // We don't have this info from the API
+        fileUrl: `${BASE_URL}/get-media/${msg.id}`, // Construct media URL
       }),
     }));
   } catch (error) {
     console.error("Failed to fetch messages:", error);
     throw error;
   }
+}
+
+/**
+ * Generate a descriptive filename based on message type and content
+ */
+function getFileName(
+  messageType: string,
+  id: number,
+  text: string | null
+): string {
+  const extension = getFileExtension(messageType);
+  const prefix = text ? sanitizeText(text) : messageType;
+  return `${prefix}_${id}.${extension}`;
+}
+
+/**
+ * Create a safe filename from text content
+ */
+function sanitizeText(text: string): string {
+  // Take first 20 chars and replace non-alphanumeric chars with underscores
+  return text
+    .slice(0, 20)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "_")
+    .replace(/_+/g, "_"); // Replace multiple underscores with single
 }
 
 /**
@@ -43,7 +68,8 @@ export async function markMessageAsRead(id: string): Promise<void> {
     const response = await fetch(`${BASE_URL}/read-message/${id}`);
 
     if (!response.ok) {
-      throw new Error(`Error marking message as read: ${response.status}`);
+      // ! temporarily disable(feature not implemented)
+      // throw new Error(`Error marking message as read: ${response.status}`);
     }
   } catch (error) {
     console.error(`Failed to mark message ${id} as read:`, error);
