@@ -20,7 +20,7 @@ const AdminMessages: React.FC = () => {
     <PageTransition>
       {
         checkingStatus ? (
-          <div className="flex justify-center items-center mx-auto px-4 py-12 min-h-[50vh] container">
+          <div className="mt-16 flex justify-center items-center mx-auto px-4 py-12 min-h-[50vh] container">
             <div className="border-4 border-primary border-t-transparent rounded-full w-10 h-10 animate-spin" />
           </div>
         ) : isAdmin ? (

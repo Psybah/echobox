@@ -7,6 +7,11 @@
     <meta name="description" content="Anonymous web app for sharing school secrets" />
     <meta name="author" content="Cybersmith" />
     <meta property="og:image" content="/og-image.png" />
+    <script>
+      let theme = localStorage.getItem('echobox-theme');
+      if (!theme) theme = 'dark';
+      document.documentElement.classList.add(theme);
+    </script>
   </head>
 
   <body>

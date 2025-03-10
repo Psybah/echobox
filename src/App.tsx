@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { AdminProvider } from "@/hooks/use-admin";
 import { AnimatePresence } from "framer-motion";
 
@@ -20,7 +20,7 @@ const queryClient = new QueryClient();
 
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider defaultTheme="dark" storageKey="echobox-theme">
       <AdminProvider>
         <TooltipProvider>
           <Router>

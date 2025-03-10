@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
@@ -11,28 +10,28 @@ import { useToast } from '@/hooks/use-toast';
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, logout } = useAdmin();
+  const { isAdmin, logoutAdmin } = useAdmin();
   const { toast } = useToast();
-  const isAdmin = location.pathname.includes('/admin');
+  const isAdminRoute = location.pathname.includes('/admin');
 
   const handleLogout = () => {
-    logout();
+    logoutAdmin();
     toast({
       title: 'Logged out',
       description: 'You have been logged out successfully',
     });
-    navigate('/admin');
+    navigate('/admin-login');
   };
 
   return (
-    <header className="w-full py-4 px-4 sm:px-6 border-b border-white/5 glass">
-      <div className="container mx-auto flex justify-between items-center">
+    <header className="fixed top-0 left-0 right-0 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      <div className="container h-full mx-auto flex justify-between items-center px-4">
         <EchoLogo />
         
         <div className="flex items-center gap-2 sm:gap-4">
-          {isAdmin && isLoggedIn && (
+          {isAdminRoute && isAdmin && (
             <>
-              <span className="hidden xs:inline-flex text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full bg-echo-purple/20 text-echo-purple border border-echo-purple/30">
+              <span className="inline-flex text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/30">
                 Admin Mode
               </span>
               <Button 

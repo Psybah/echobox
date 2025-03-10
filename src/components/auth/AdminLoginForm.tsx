@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Lock, User, Key } from "lucide-react";
+import { Lock, User, Key, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ type LoginFormValues = z.infer<typeof LoginSchema>;
 
 const AdminLoginForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loginAdmin } = useAdmin();
@@ -107,11 +108,27 @@ const AdminLoginForm: React.FC = () => {
           <div className="relative">
             <Key className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
             <Input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               {...register("password")}
-              className="pl-10"
+              className="pl-10 pr-10"
             />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1 h-8 w-8 p-0 hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="sr-only">
+                {showPassword ? "Hide password" : "Show password"}
+              </span>
+            </Button>
           </div>
           {errors.password && (
             <p className="text-destructive text-xs">

@@ -233,7 +233,7 @@ const MessageDashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 mx-auto p-4 w-full max-w-6xl">
+    <div className="pt-16 space-y-6 mx-auto p-4 w-full max-w-6xl">
       <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <h1 className="font-bold text-gradient text-2xl">
