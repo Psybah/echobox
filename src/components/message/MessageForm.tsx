@@ -184,7 +184,7 @@ const MessageForm: React.FC = () => {
   return (
     <motion.form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 p-6 w-full glass-card"
+      className="space-y-6 p-6 w-full mt-16 glass-card"
       initial="hidden"
       animate="visible"
       variants={formVariants}
